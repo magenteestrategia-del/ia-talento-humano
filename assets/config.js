@@ -27,17 +27,17 @@ export const REDES = {
 
 // 2) Correo de Google con el que entrarás al panel del ponente.
 //    Debe ser EXACTAMENTE el mismo que pongas en las reglas de Firestore.
-export const CORREO_PONENTE = "TU_CORREO@gmail.com";
+export const CORREO_PONENTE = "magenteestrategia@gmail.com";
 
 // 3) Configuración de Firebase (la copias de la consola de Firebase:
 //    Configuración del proyecto → Tus apps → Configuración del SDK).
 //    Mientras no la llenes, el sitio funciona en MODO DEMOSTRACIÓN:
 //    las respuestas solo se guardan en este navegador, para que puedas probarlo.
 export const FIREBASE = {
-  apiKey: "PEGA_AQUI",
-  authDomain: "PEGA_AQUI",
-  projectId: "PEGA_AQUI",
-  storageBucket: "PEGA_AQUI",
-  messagingSenderId: "PEGA_AQUI",
-  appId: "PEGA_AQUI",
+  apiKey: "AIzaSyAH88KjCtKf9rtmiPbz22D9YoIvhGDjG7Y",
+  authDomain: "ia-talento-humano-580ac.firebaseapp.com",
+  projectId: "ia-talento-humano-580ac",
+  storageBucket: "ia-talento-humano-580ac.firebasestorage.app",
+  messagingSenderId: "888474119329",
+  appId: "1:888474119329:web:6846db12c6b149139614e0",
 };
