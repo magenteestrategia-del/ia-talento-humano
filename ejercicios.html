@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de ejercicios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="encabezado"><div class="contenedor">
+  <a class="marca" href="index.html"><span class="punto"></span>IA y talento humano</a>
+  <nav class="nav">
+    <a href="index.html">Inicio</a>
+    <a href="diagnostico.html">Diagnóstico</a>
+    <a href="teoria.html">Guía de estudio</a>
+    <a href="herramientas.html">Herramientas</a>
+    <a href="materiales.html">Materiales</a>
+    <a href="ejercicios.html" aria-current="page">Ejercicios</a>
+    <a href="evaluacion.html">Evaluación</a>
+    <a href="ficha.html">Programa</a>
+  </nav>
+</div></header>
+
+<section class="banda"><div class="contenedor">
+  <div class="eti">Paso 03 · Guía de ejercicios</div>
+  <h1>Aprende <span class="serif">haciendo</span></h1>
+  <p>Contesta durante los talleres. Tus respuestas se guardan solas mientras escribes y tu ponente puede verlas en tiempo real.</p>
+</div></section>
+
+<main class="contenedor estrecho seccion">
+    
+  <section id="datos" class="tarjeta" style="margin-bottom:20px">
+    <div class="fila">
+      <div class="campo"><label for="nombre">Tu nombre</label><input id="nombre" type="text" maxlength="80" placeholder="Nombre y apellido"></div>
+      <div class="campo"><label for="equipo">Tu equipo</label>
+        <select id="equipo">
+          <option value="">Elige tu equipo</option>
+          <option>Equipo 1</option><option>Equipo 2</option><option>Equipo 3</option><option>Equipo 4</option><option>Equipo 5</option>
+        </select></div>
+    </div>
+    <button id="entrar" class="boton">Comenzar</button>
+    <p id="err" class="estado err"></p>
+  </section>
+
+  <section id="trabajo" class="oculto">
+    <div class="fila" style="justify-content:space-between;margin-bottom:12px">
+      <span class="chip navy" id="quien"></span>
+      <span class="estado" id="estado"></span>
+    </div>
+    <div class="caja-ayuda"><b>Cómo funciona esta página.</b> Abre cada ejercicio cuando la ponente te lo indique. Cada uno trae para qué sirve, el material que necesitas, el paso a paso, los prompts listos para copiar y un ejemplo de buena respuesta. Tus respuestas se guardan solas mientras escribes. ¿Primera vez con ChatGPT, Gemini o Google Sheets? Abre la <a href="herramientas.html" target="_blank">guía rápida de herramientas</a>.</div>
+    <div class="caja-caso"><strong>Caso conductor · Textiles del Valle.</strong> <span id="caso"></span></div>
+    <div id="lista"></div>
+    <button id="cambiar" class="boton secundario" style="margin-top:8px">Cambiar nombre o equipo</button>
+  </section>
+</main>
+
+<script type="module">
+import { esc } from "./assets/comun.js";
+import { EJERCICIOS, CASO } from "./assets/datos.js";
+import { MATERIALES } from "./assets/materiales-datos.js";
+import { iniciarAlumno, leer, guardar } from "./assets/datastore.js";
+
+const $ = (id) => document.getElementById(id);
+let uid = null, respuestas = {}, perfil = {};
+const pendientes = {}; let temporizador = null;
+
+$("caso").textContent = CASO;
+
+function estado(txt, cls = "") { $("estado").textContent = txt; $("estado").className = "estado " + cls; }
+
+function programarGuardado(pid, valor) {
+  respuestas[pid] = valor; pendientes[pid] = valor;
+  estado("Escribiendo…");
+  clearTimeout(temporizador);
+  temporizador = setTimeout(guardarPendientes, 1200);
+}
+
+async function guardarPendientes() {
+  const lote = { ...pendientes };
+  if (!Object.keys(lote).length) return;
+  Object.keys(lote).forEach((k) => delete pendientes[k]);
+  estado("Guardando…");
+  try {
+    await guardar("ejercicios", uid, { ...perfil, respuestas: lote });
+    estado("Guardado ✓", "ok");
+    marcarAvance();
+  } catch (e) {
+    console.error(e);
+    Object.assign(pendientes, lote);
+    estado("No se pudo guardar. Revisa tu conexión; reintentaremos.", "err");
+    clearTimeout(temporizador); temporizador = setTimeout(guardarPendientes, 4000);
+  }
+}
+window.addEventListener("beforeunload", (e) => { if (Object.keys(pendientes).length) { guardarPendientes(); e.preventDefault(); } });
+
+function marcarAvance() {
+  EJERCICIOS.forEach((ej) => {
+    const hechas = ej.preguntas.filter((p) => String(respuestas[p.id] ?? "").trim() !== "").length;
+    const chip = document.getElementById("av-" + ej.id);
+    if (chip) {
+      chip.textContent = hechas === ej.preguntas.length ? "Completo" : `${hechas}/${ej.preguntas.length}`;
+      chip.className = "chip " + (hechas === ej.preguntas.length ? "ok" : "navy");
+    }
+  });
+}
+
+function pintar() {
+  let html = "", diaActual = "";
+  EJERCICIOS.forEach((ej, n) => {
+    if (ej.dia !== diaActual) { diaActual = ej.dia; html += `<h2 style="margin-top:28px">${esc(ej.dia)}</h2>`; }
+    html += `<details class="tarjeta ejercicio" ${n === 0 ? "open" : ""}>
+      <summary><h3>${n + 1}. ${esc(ej.titulo)}</h3><span class="fila" style="gap:6px"><span class="chip">${esc(ej.modo)}</span><span class="chip navy" id="av-${ej.id}"></span></span></summary>
+      <div class="ej-ficha">
+        <div class="ej-meta"><div><b>🎯 Para qué</b><span>${esc(ej.objetivo)}</span></div><div><b>🛠 Con qué</b><span>${esc(ej.herramienta)}</span></div></div>
+        ${ej.lectura ? `<div class="ej-lectura">${ej.lectura.map((x) => `<p>${esc(x)}</p>`).join("")}</div>` : ""}
+        ${ej.material ? `<details class="ej-material"><summary>📄 Ver el Material ${ej.material}</summary><div class="teoria">${MATERIALES[ej.material] || ""}</div></details>` : ""}
+        <div class="pasos-ej"><b>Paso a paso</b><ol>${ej.pasos.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></div>
+        ${(ej.prompts || []).map((pr, k) => `<div class="ej-prompt"><div class="ej-prompt-cab"><b>${esc(pr.titulo)}</b><button type="button" class="boton secundario copiar" data-copiar="${ej.id}-${k}">Copiar</button></div><pre id="pr-${ej.id}-${k}">${esc(pr.texto)}</pre></div>`).join("")}
+        ${ej.ejemplo ? `<div class="ej-ejemplo"><b>✅ Así se ve una buena respuesta</b><p>${esc(ej.ejemplo)}</p></div>` : ""}
+        <p class="ayuda" style="margin:0 0 6px">📖 Guía: ${esc(ej.guia)}${ej.producto ? ` · <b>${esc(ej.producto)}</b>` : ""}</p>
+        <div class="ej-resp-titulo">✍️ Tus respuestas</div>
+      </div>`;
+    ej.preguntas.forEach((p) => {
+      const val = respuestas[p.id] ?? "";
+      html += `<div class="campo"><label for="p-${p.id}">${esc(p.id)} ${esc(p.texto)}</label>`;
+      if (p.tipo === "opcion") {
+        html += `<div class="radios">` + p.opciones.map((o, k) =>
+          `<label><input type="radio" name="p-${p.id}" value="${k}" data-pid="${p.id}" ${String(val) === String(k) ? "checked" : ""}> <span>${esc(o)}</span></label>`).join("") + `</div>`;
+      } else {
+        html += `<textarea id="p-${p.id}" data-pid="${p.id}" placeholder="Escribe tu respuesta…">${esc(val)}</textarea>`;
+      }
+      html += `</div>`;
+    });
+    html += `</details>`;
+  });
+  $("lista").innerHTML = html;
+  $("lista").querySelectorAll("textarea[data-pid]").forEach((t) => t.addEventListener("input", () => programarGuardado(t.dataset.pid, t.value)));
+  $("lista").querySelectorAll("input[type=radio][data-pid]").forEach((r) => r.addEventListener("change", () => {
+    programarGuardado(r.dataset.pid, Number(r.value)); clearTimeout(temporizador); guardarPendientes();
+  }));
+  $("lista").querySelectorAll("[data-copiar]").forEach((b) => b.addEventListener("click", async () => {
+    const t = document.getElementById("pr-" + b.dataset.copiar).textContent;
+    try { await navigator.clipboard.writeText(t); b.textContent = "¡Copiado!"; }
+    catch { const r = document.createRange(); r.selectNodeContents(document.getElementById("pr-" + b.dataset.copiar)); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = "Selecciónalo y presiona Ctrl + C"; }
+    setTimeout(() => (b.textContent = "Copiar"), 2500);
+  }));
+  marcarAvance();
+}
+
+$("entrar").onclick = async () => {
+  const nombre = $("nombre").value.trim(), equipo = $("equipo").value;
+  if (nombre.length < 2 || !equipo) { $("err").textContent = "Escribe tu nombre y elige tu equipo."; return; }
+  $("entrar").disabled = true; $("err").textContent = "";
+  try {
+    uid = await iniciarAlumno();
+    const previo = await leer("ejercicios", uid);
+    respuestas = (previo && previo.respuestas) || {};
+    perfil = { nombre, equipo };
+    await guardar("ejercicios", uid, { ...perfil, respuestas: {} });
+    try { localStorage.setItem("ia-rh-nombre", nombre); localStorage.setItem("ia-rh-equipo", equipo); } catch {}
+    $("quien").textContent = `${nombre} · ${equipo}`;
+    $("datos").classList.add("oculto"); $("trabajo").classList.remove("oculto");
+    pintar();
+  } catch (e) {
+    console.error(e);
+    $("err").textContent = "No pudimos conectarnos. Revisa tu internet e inténtalo de nuevo.";
+  } finally { $("entrar").disabled = false; }
+};
+$("cambiar").onclick = () => { $("trabajo").classList.add("oculto"); $("datos").classList.remove("oculto"); };
+
+try { $("nombre").value = localStorage.getItem("ia-rh-nombre") || ""; $("equipo").value = localStorage.getItem("ia-rh-equipo") || ""; } catch {}
+</script>
+<script type="module" src="assets/asistente.js"></script>
+</body>
+</html>

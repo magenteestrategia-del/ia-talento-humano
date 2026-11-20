@@ -1,0 +1,73 @@
+rules_version = '2';
+// Reglas de seguridad del sitio del curso.
+// Reemplaza TU_CORREO@gmail.com por el mismo correo que pusiste en assets/config.js.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function esPonente() {
+      return request.auth != null
+        && request.auth.token.email == 'TU_CORREO@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+    function esDueno(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function nombreValido() {
+      return request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && request.resource.data.nombre.size() <= 80;
+    }
+
+    // Diagnóstico: cada alumno solo escribe y lee su propio documento; el ponente lee y borra todo.
+    match /diagnostico/{uid} {
+      allow read: if esPonente() || esDueno(uid);
+      allow create, update: if esDueno(uid)
+        && request.resource.data.keys().hasOnly(['nombre', 'respuestas', 'actualizado'])
+        && nombreValido()
+        && request.resource.data.respuestas is map
+        && request.resource.data.respuestas.size() <= 30;
+      allow delete: if esPonente();
+    }
+
+    // Ejercicios: igual que el diagnóstico, con el campo "equipo".
+    match /ejercicios/{uid} {
+      allow read: if esPonente() || esDueno(uid);
+      allow create, update: if esDueno(uid)
+        && request.resource.data.keys().hasOnly(['nombre', 'equipo', 'respuestas', 'actualizado'])
+        && nombreValido()
+        && request.resource.data.equipo is string
+        && request.resource.data.equipo.size() <= 40
+        && request.resource.data.respuestas is map
+        && request.resource.data.respuestas.size() <= 60;
+      allow delete: if esPonente();
+    }
+
+    // Evaluación final: una sola entrega por alumno (no se puede modificar después de enviarla).
+    match /evaluacion/{uid} {
+      allow read: if esPonente() || esDueno(uid);
+      allow create, update: if esDueno(uid)
+        && !(resource != null && resource.data.get('enviado', false) == true)
+        && request.resource.data.keys().hasOnly(['nombre', 'equipo', 'respuestas', 'puntaje', 'enviado', 'actualizado'])
+        && nombreValido()
+        && request.resource.data.respuestas is map
+        && request.resource.data.respuestas.size() <= 30;
+      allow delete: if esPonente();
+    }
+
+    // Encuesta de satisfacción (puede ser anónima: nombre = "Anónimo").
+    match /opinion/{uid} {
+      allow read: if esPonente() || esDueno(uid);
+      allow create, update: if esDueno(uid)
+        && request.resource.data.keys().hasOnly(['nombre', 'respuestas', 'actualizado'])
+        && nombreValido()
+        && request.resource.data.respuestas is map
+        && request.resource.data.respuestas.size() <= 20;
+      allow delete: if esPonente();
+    }
+
+    // Todo lo demás está cerrado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

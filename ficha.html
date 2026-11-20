@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ficha del programa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .ficha { background: #fff; border: 1px solid var(--linea); border-radius: var(--radio); box-shadow: var(--sombra); overflow: hidden; }
+  .ficha-cab { background: var(--navy); color: #fff; padding: 26px 28px; }
+  .ficha-cab .eti { color: #E6007E; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .ficha-cab h1 { color: #fff; font-size: 28px; margin: 8px 0 6px; }
+  .ficha-cab p { color: #BDBDBD; margin: 0; font-size: 14px; }
+  .ficha-cuerpo { padding: 22px 28px 26px; display: grid; gap: 18px; }
+  .ficha h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--acento); margin: 0 0 6px; }
+  .ficha p, .ficha li { font-size: 14px; margin: 0; }
+  .ficha ul { margin: 0; padding-left: 18px; }
+  .ficha li { margin-bottom: 3px; }
+  .datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .dato { background: var(--fondo); border-radius: 10px; padding: 10px 12px; }
+  .dato .l { font-size: 11px; color: var(--suave); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+  .dato .v { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .ses { border: 1px solid var(--linea); border-radius: 10px; padding: 12px 14px; }
+  .ses .cuando { font-size: 12px; font-weight: 700; color: var(--acento); }
+  .ses h3 { font-size: 15px; margin: 2px 0 6px; }
+  .lema { border-left: 3px solid var(--acento); padding-left: 10px; font-weight: 600; color: var(--navy); font-size: 14px; }
+  @media (max-width: 640px) { .dos { grid-template-columns: 1fr; } }
+  @media print {
+    @page { size: Letter; margin: 10mm; }
+    body { background: #fff; font-size: 12px; }
+    .encabezado, .aviso-demo, .no-imprimir { display: none !important; }
+    .seccion { padding: 0; }
+    .contenedor { max-width: none; padding: 0; }
+    .ficha { border: 0; box-shadow: none; border-radius: 0; }
+    .ficha-cab, .dato, th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .ficha-cab { padding: 16px 20px; }
+    .ficha-cuerpo { padding: 14px 4px 0; gap: 12px; }
+    .ficha p, .ficha li { font-size: 11.5px; }
+    .dos { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<header class="encabezado"><div class="contenedor">
+  <a class="marca" href="index.html"><span class="punto"></span>IA y talento humano</a>
+  <nav class="nav">
+    <a href="index.html">Inicio</a>
+    <a href="diagnostico.html">Diagnóstico</a>
+    <a href="teoria.html">Guía de estudio</a>
+    <a href="herramientas.html">Herramientas</a>
+    <a href="materiales.html">Materiales</a>
+    <a href="ejercicios.html">Ejercicios</a>
+    <a href="evaluacion.html">Evaluación</a>
+    <a href="ficha.html" aria-current="page">Programa</a>
+  </nav>
+</div></header>
+
+<section class="banda no-imprimir"><div class="contenedor">
+  <div class="eti">Paso 05 · Programa</div>
+  <h1>Ficha del <span class="serif">programa</span></h1>
+  <p>Objetivo, horarios, temario y requisitos. Descárgala en PDF para compartirla.</p>
+</div></section>
+
+<main class="contenedor estrecho seccion">
+  <div class="fila no-imprimir" style="justify-content:space-between;margin-bottom:16px">
+    <span class="kicker" style="margin:0">Una página, todo el programa</span>
+    <button class="boton" onclick="window.print()">Descargar en PDF</button>
+  </div>
+  <p class="ayuda no-imprimir" style="margin-bottom:16px">Al dar clic, elige "Guardar como PDF" en el destino de impresión.</p>
+
+  <article class="ficha">
+    <div class="ficha-cab" style="display:flex;justify-content:space-between;gap:20px;align-items:flex-start">
+      <div>
+      <div class="eti"><span data-curso="programa"></span> · <span data-curso="universidad"></span></div>
+      <h1 data-curso="titulo">IA aplicada a la evaluación del talento humano</h1>
+      <p>Módulo: <span data-curso="modulo"></span></p>
+      </div>
+      <div class="ficha-logo"><img src="assets/logos-unah.png" alt="Maestría en Psicología Industrial y Organizacional · Universidad Nacional Autónoma de Honduras (UNAH)"></div>
+    </div>
+    <div class="ficha-cuerpo">
+      <div class="datos">
+        <div class="dato"><div class="l">Duración</div><div class="v">8 horas, 2 sesiones</div></div>
+        <div class="dato"><div class="l">Modalidad</div><div class="v" data-curso="modalidad"></div></div>
+        <div class="dato"><div class="l">Ponente</div><div class="v" data-curso="ponente"></div></div>
+        <div class="dato"><div class="l">Costo de herramientas</div><div class="v">Todas gratuitas</div></div>
+      </div>
+
+      <div>
+        <h2>Objetivo</h2>
+        <p>Que los participantes diseñen un proceso de evaluación y selección apoyado en herramientas de IA gratuitas, aplicable a un puesto real de su organización, con criterios técnicos, éticos y centrados en las personas.</p>
+      </div>
+
+      <div class="dos">
+        <div class="ses">
+          <div class="cuando"><span data-curso="sesion1.dia"></span> · <span data-curso="sesion1.horario"></span></div>
+          <h3>Entender la IA y rediseñar la evaluación</h3>
+          <ul>
+            <li>Diagnóstico interactivo</li>
+            <li>El papel de RR. HH. en la era de la IA</li>
+            <li>Tipos de IA, ATS y caso Amazon</li>
+            <li>Ingeniería de prompts</li>
+            <li>Taller: perfil y entrevista por competencias</li>
+          </ul>
+        </div>
+        <div class="ses">
+          <div class="cuando"><span data-curso="sesion2.dia"></span> · <span data-curso="sesion2.horario"></span></div>
+          <h3>Medir, automatizar y evaluar con responsabilidad</h3>
+          <ul>
+            <li>Personaliza tu IA y crea tu asistente</li>
+            <li>Métricas predictivas y tablero</li>
+            <li>Psicometría y assessment center con IA</li>
+            <li>Ética, sesgos y privacidad</li>
+            <li>Cierre: ser RR. HH. es una decisión diaria</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="dos">
+        <div>
+          <h2>Herramientas</h2>
+          <p>Gemini, ChatGPT y Claude en sus versiones gratuitas, y Google Sheets.</p>
+        </div>
+        <div>
+          <h2>Producto final</h2>
+          <p>Proyecto en equipo: un proceso de selección potenciado con IA para un puesto real, entregado al profesor del módulo.</p>
+        </div>
+      </div>
+
+      <div>
+        <h2>Qué necesitas</h2>
+        <p>Laptop con cámara y micrófono · conexión estable · cuenta personal de Gmail · cuentas gratuitas de ChatGPT y Claude · un puesto real de tu organización, sin datos personales.</p>
+      </div>
+
+      <div class="lema">La IA apoya; la experiencia decide.</div>
+    </div>
+  </article>
+</main>
+<script type="module" src="assets/comun.js"></script>
+<script type="module" src="assets/asistente.js"></script>
+</body>
+</html>

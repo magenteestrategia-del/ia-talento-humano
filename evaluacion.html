@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluación final</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="encabezado"><div class="contenedor">
+  <a class="marca" href="index.html"><span class="punto"></span>IA y talento humano</a>
+  <nav class="nav">
+    <a href="index.html">Inicio</a>
+    <a href="diagnostico.html">Diagnóstico</a>
+    <a href="teoria.html">Guía de estudio</a>
+    <a href="herramientas.html">Herramientas</a>
+    <a href="materiales.html">Materiales</a>
+    <a href="ejercicios.html">Ejercicios</a>
+    <a href="evaluacion.html" aria-current="page">Evaluación</a>
+    <a href="ficha.html">Programa</a>
+  </nav>
+</div></header>
+
+<section class="banda"><div class="contenedor">
+  <div class="eti">Paso 06 · Evaluación final</div>
+  <h1>¿Qué te <span class="serif">llevas?</span></h1>
+  <p>Quince preguntas para comprobar lo que aprendiste, con tu resultado al momento, y una breve encuesta sobre el curso. Te toma unos 10 minutos.</p>
+</div></section>
+
+<main class="contenedor estrecho seccion">
+  <section id="datos" class="tarjeta" style="margin-bottom:20px">
+    <div class="fila">
+      <div class="campo"><label for="nombre">Tu nombre</label><input id="nombre" type="text" maxlength="80" placeholder="Nombre y apellido"></div>
+      <div class="campo"><label for="equipo">Tu equipo</label>
+        <select id="equipo"><option value="">Elige tu equipo</option><option>Equipo 1</option><option>Equipo 2</option><option>Equipo 3</option><option>Equipo 4</option><option>Equipo 5</option></select></div>
+    </div>
+    <button id="entrar" class="boton">Comenzar</button>
+    <p id="err" class="estado err"></p>
+  </section>
+
+  <section id="parte1" class="oculto">
+    <div class="caja-ayuda"><b>Parte 1 · Evaluación de conocimientos.</b> Hay preguntas de opción múltiple, de verdadero o falso y de relacionar columnas. Contesta todas y al final presiona <b>Ver mi resultado</b>: verás tu calificación y la explicación de cada respuesta. Solo se puede enviar una vez.</div>
+    <div id="preguntas"></div>
+    <p id="err1" class="estado err"></p>
+    <button id="calificar" class="boton brillante">Ver mi resultado</button>
+    <div id="resultado" class="oculto"></div>
+  </section>
+
+  <section id="parte2" class="oculto" style="margin-top:28px">
+    <div class="tarjeta">
+      <h2 style="margin-top:0">Parte 2 · ¿Qué te pareció el curso?</h2>
+      <p class="ayuda">Tu opinión ayuda a mejorar. Puedes enviarla de forma anónima.</p>
+      <div id="encuesta"></div>
+      <label class="anonimo"><input type="checkbox" id="anonimo"> Enviar mi opinión de forma anónima</label>
+      <p id="err2" class="estado err"></p>
+      <button id="enviar-op" class="boton">Enviar mi opinión</button>
+    </div>
+    <div id="gracias" class="oculto"></div>
+  </section>
+</main>
+
+<script type="module">
+import { esc } from "./assets/comun.js";
+import { REDES } from "./assets/config.js";
+import { EVALUACION, ENCUESTA, calificar } from "./assets/evaluacion-datos.js";
+import { iniciarAlumno, leer, guardar } from "./assets/datastore.js";
+
+const $ = (id) => document.getElementById(id);
+let uid = null, perfil = {}, resp = {}, enviado = false;
+
+// Orden fijo pero mezclado para la columna derecha de "relacionar"
+const mezcla = (n, semilla) => { const a = [...Array(n).keys()]; let s = semilla; for (let i = n - 1; i > 0; i--) { s = (s * 9301 + 49297) % 233280; const j = Math.floor((s / 233280) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+function pintarPreguntas() {
+  $("preguntas").innerHTML = EVALUACION.map((q, n) => {
+    const tipo = { om: "Opción múltiple", vf: "Verdadero o falso", rel: "Relaciona" }[q.tipo];
+    let cuerpo = "";
+    if (q.tipo === "om") {
+      cuerpo = `<div class="radios">${q.opciones.map((o, k) => `<label><input type="radio" name="${q.id}" value="${k}"> <span>${esc(o)}</span></label>`).join("")}</div>`;
+    } else if (q.tipo === "vf") {
+      cuerpo = `<div class="radios fila">${["Verdadero", "Falso"].map((o, k) => `<label><input type="radio" name="${q.id}" value="${k === 0}"> <span>${o}</span></label>`).join("")}</div>`;
+    } else {
+      const orden = mezcla(q.pares.length, n + 7);
+      cuerpo = `<div class="relacionar">${q.pares.map((par, k) => `<div class="rel-fila"><span class="rel-izq">${esc(par[0])}</span><select data-q="${q.id}" data-k="${k}"><option value="">Elige…</option>${orden.map((j) => `<option value="${j}">${esc(q.pares[j][1])}</option>`).join("")}</select></div>`).join("")}</div>`;
+    }
+    return `<div class="tarjeta pregunta-ev" id="q-${q.id}"><div class="fila" style="justify-content:space-between;gap:8px"><span class="chip">${n + 1} de ${EVALUACION.length} · ${tipo}</span><span class="ayuda">Capítulo ${q.cap}</span></div><h3>${esc(q.texto)}</h3>${cuerpo}<div class="retro oculto"></div></div>`;
+  }).join("");
+  $("preguntas").querySelectorAll("input[type=radio]").forEach((r) => r.addEventListener("change", () => {
+    const q = EVALUACION.find((x) => x.id === r.name);
+    resp[r.name] = q.tipo === "vf" ? r.value === "true" : Number(r.value);
+  }));
+  $("preguntas").querySelectorAll("select[data-q]").forEach((s) => s.addEventListener("change", () => {
+    const id = s.dataset.q; resp[id] = resp[id] || {}; resp[id][s.dataset.k] = s.value === "" ? null : Number(s.value);
+  }));
+}
+
+function completas() {
+  return EVALUACION.every((q) => q.tipo === "rel" ? resp[q.id] && q.pares.every((_, k) => resp[q.id][k] !== null && resp[q.id][k] !== undefined) : resp[q.id] !== undefined);
+}
+
+function mostrarResultado(r) {
+  // marcar respuestas guardadas en los controles
+  EVALUACION.forEach((q) => {
+    const caja = $("q-" + q.id), v = resp[q.id];
+    caja.querySelectorAll("input,select").forEach((el) => { el.disabled = true; });
+    if (q.tipo === "om") caja.querySelectorAll("input").forEach((el) => { el.checked = Number(el.value) === v; });
+    if (q.tipo === "vf") caja.querySelectorAll("input").forEach((el) => { el.checked = (el.value === "true") === v && v !== undefined; });
+    if (q.tipo === "rel") caja.querySelectorAll("select").forEach((el) => { if (v && v[el.dataset.k] != null) el.value = String(v[el.dataset.k]); });
+    const p = r.detalle[q.id];
+    let correcta = "";
+    if (q.tipo === "om") correcta = q.opciones[q.correcta];
+    if (q.tipo === "vf") correcta = q.correcta ? "Verdadero" : "Falso";
+    if (q.tipo === "rel") correcta = q.pares.map((par) => `${par[0]} → ${par[1]}`).join(" · ");
+    const estado = p === 1 ? "bien" : p > 0 ? "parcial" : "mal";
+    caja.classList.add("ev-" + estado);
+    const ret = caja.querySelector(".retro");
+    ret.innerHTML = `<b>${p === 1 ? "✅ ¡Correcto!" : p > 0 ? `🟡 Parcialmente correcto (${Math.round(p * 100)} %)` : "❌ Incorrecto"}</b>${p < 1 ? `<p><b>Respuesta correcta:</b> ${esc(correcta)}</p>` : ""}<p>${esc(q.explicacion)}</p>`;
+    ret.classList.remove("oculto");
+  });
+  const pct = Math.round((r.puntos / r.total) * 100);
+  const msg = pct >= 90 ? "¡Excelente! Dominas los conceptos clave del curso." : pct >= 70 ? "¡Muy bien! Entendiste lo esencial; revisa las explicaciones de las que fallaste." : pct >= 50 ? "Vas bien. Repasa en la guía los capítulos de las preguntas que fallaste." : "Te recomendamos repasar la guía de estudio con calma; ahí está todo explicado paso a paso.";
+  $("resultado").innerHTML = `<div class="tarjeta resultado-ev"><div class="ayuda">Tu resultado</div><div class="puntaje">${r.puntos} <small>/ ${r.total}</small></div><div class="barra-ev"><span style="width:${pct}%"></span></div><p><b>${pct} %</b> · ${msg}</p><p class="ayuda" style="margin:0">Abajo de cada pregunta está la explicación. Después, contesta la Parte 2.</p></div>`;
+  $("resultado").classList.remove("oculto");
+  $("calificar").classList.add("oculto");
+  $("parte2").classList.remove("oculto");
+  $("resultado").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("calificar").onclick = async () => {
+  if (!completas()) { $("err1").textContent = "Te faltan preguntas por contestar (revisa también las de relacionar)."; return; }
+  $("err1").textContent = ""; $("calificar").disabled = true;
+  const r = calificar(resp);
+  try { await guardar("evaluacion", uid, { ...perfil, respuestas: resp, puntaje: r.puntos, enviado: true }); }
+  catch (e) { console.error(e); }
+  enviado = true; mostrarResultado(r);
+};
+
+function pintarEncuesta() {
+  const esc5 = ENCUESTA.etiquetas;
+  $("encuesta").innerHTML =
+    ENCUESTA.escala.map((p) => `<div class="campo"><label>${esc(p.texto)}</label><div class="likert">${esc5.map((t, k) => `<label title="${esc(t)}"><input type="radio" name="${p.id}" value="${k + 1}"><span>${k + 1}</span><small>${esc(t)}</small></label>`).join("")}</div></div>`).join("") +
+    `<div class="campo"><label>${esc(ENCUESTA.recomienda.texto)}</label><div class="radios fila">${ENCUESTA.recomienda.opciones.map((o) => `<label><input type="radio" name="${ENCUESTA.recomienda.id}" value="${esc(o)}"> <span>${esc(o)}</span></label>`).join("")}</div></div>` +
+    ENCUESTA.abiertas.map((p) => `<div class="campo"><label for="${p.id}">${esc(p.texto)}</label><textarea id="${p.id}" maxlength="1500"></textarea></div>`).join("");
+}
+
+$("enviar-op").onclick = async () => {
+  const o = {};
+  for (const p of ENCUESTA.escala) { const s = document.querySelector(`input[name=${p.id}]:checked`); if (!s) { $("err2").textContent = "Califica todas las afirmaciones del 1 al 5."; return; } o[p.id] = Number(s.value); }
+  const rec = document.querySelector(`input[name=${ENCUESTA.recomienda.id}]:checked`); o[ENCUESTA.recomienda.id] = rec ? rec.value : "";
+  ENCUESTA.abiertas.forEach((p) => { o[p.id] = $(p.id).value.trim(); });
+  $("err2").textContent = ""; $("enviar-op").disabled = true;
+  try { await guardar("opinion", uid, { nombre: $("anonimo").checked ? "Anónimo" : perfil.nombre, respuestas: o }); } catch (e) { console.error(e); }
+  $("gracias").innerHTML = `<div class="tarjeta" style="text-align:center;margin-top:16px"><h2 style="margin-top:0">¡Gracias! 💜</h2><p>Tu opinión ya llegó a la ponente. Gracias por tu tiempo y tu participación en estas dos sesiones.</p><p class="fila" style="justify-content:center;gap:10px;flex-wrap:wrap">${REDES.linkedinPonente ? `<a class="boton" href="${REDES.linkedinPonente}" target="_blank" rel="noopener">Conecta en LinkedIn</a>` : ""}${REDES.libro ? `<a class="boton secundario" href="${REDES.libro}" target="_blank" rel="noopener">Conoce la guía No eres tú</a>` : ""}</p></div>`;
+  $("gracias").classList.remove("oculto");
+  document.querySelector("#parte2 > .tarjeta").classList.add("oculto");
+};
+
+$("entrar").onclick = async () => {
+  const nombre = $("nombre").value.trim(), equipo = $("equipo").value;
+  if (nombre.length < 2 || !equipo) { $("err").textContent = "Escribe tu nombre y elige tu equipo."; return; }
+  $("entrar").disabled = true; $("err").textContent = "";
+  try {
+    uid = await iniciarAlumno();
+    perfil = { nombre, equipo };
+    const previo = await leer("evaluacion", uid);
+    try { localStorage.setItem("ia-rh-nombre", nombre); localStorage.setItem("ia-rh-equipo", equipo); } catch {}
+    $("datos").classList.add("oculto"); $("parte1").classList.remove("oculto");
+    pintarPreguntas(); pintarEncuesta();
+    if (previo && previo.enviado) { resp = previo.respuestas || {}; mostrarResultado(calificar(resp)); }
+    else await guardar("evaluacion", uid, { ...perfil, respuestas: {} });
+  } catch (e) { console.error(e); $("err").textContent = "No pudimos conectarnos. Revisa tu internet e inténtalo de nuevo."; }
+  finally { $("entrar").disabled = false; }
+};
+try { $("nombre").value = localStorage.getItem("ia-rh-nombre") || ""; $("equipo").value = localStorage.getItem("ia-rh-equipo") || ""; } catch {}
+</script>
+<script type="module" src="assets/comun.js"></script>
+<script type="module" src="assets/asistente.js"></script>
+</body>
+</html>

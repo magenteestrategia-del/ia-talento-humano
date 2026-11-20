@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnóstico inicial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="encabezado"><div class="contenedor">
+  <a class="marca" href="index.html"><span class="punto"></span>IA y talento humano</a>
+  <nav class="nav">
+    <a href="index.html">Inicio</a>
+    <a href="diagnostico.html" aria-current="page">Diagnóstico</a>
+    <a href="teoria.html">Guía de estudio</a>
+    <a href="herramientas.html">Herramientas</a>
+    <a href="materiales.html">Materiales</a>
+    <a href="ejercicios.html">Ejercicios</a>
+    <a href="evaluacion.html">Evaluación</a>
+    <a href="ficha.html">Programa</a>
+  </nav>
+</div></header>
+
+<section class="banda"><div class="contenedor">
+  <div class="eti">Paso 01 · Diagnóstico</div>
+  <h1>¿Qué tanto sabemos de <span class="serif">inteligencia artificial?</span></h1>
+  <p>Once preguntas rápidas. No es examen: los resultados del grupo se comentan en vivo.</p>
+</div></section>
+
+<main class="contenedor estrecho seccion">
+  <!-- Paso 1: nombre -->
+  <section id="inicio" class="tarjeta">
+    <h2>Antes de empezar</h2>
+    <p style="color:var(--suave)">Once preguntas rápidas. No es examen: sirve para saber de dónde partimos como grupo. Tu ponente verá los resultados del grupo en vivo.</p>
+    <div class="campo">
+      <label for="nombre">Tu nombre</label>
+      <input id="nombre" type="text" maxlength="80" autocomplete="name" placeholder="Nombre y apellido">
+    </div>
+    <button id="empezar" class="boton">Empezar</button>
+    <p id="err-inicio" class="estado err"></p>
+  </section>
+
+  <!-- Paso 2: preguntas -->
+  <section id="juego" class="oculto">
+    <div class="fila" style="justify-content:space-between">
+      <span class="chip navy" id="contador"></span>
+      <span class="estado" id="estado"></span>
+    </div>
+    <div class="progreso"><div id="barra" style="width:0"></div></div>
+    <div class="pregunta-grande" id="pregunta"></div>
+    <div class="opciones" id="opciones"></div>
+    <div class="fila" style="margin-top:20px;justify-content:space-between">
+      <button id="atras" class="boton secundario">← Anterior</button>
+    </div>
+  </section>
+
+  <!-- Paso 3: fin -->
+  <section id="fin" class="tarjeta oculto" style="text-align:center">
+    <div style="font-size:44px">✓</div>
+    <h2>¡Listo, <span id="nombre-fin"></span>!</h2>
+    <p style="color:var(--suave)">Tus respuestas quedaron registradas. En un momento comentamos los resultados del grupo en la pantalla.</p>
+    <div class="fila" style="justify-content:center">
+      <button id="revisar" class="boton secundario">Revisar mis respuestas</button>
+      <a class="boton" href="teoria.html">Ir a la guía de estudio</a>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import "./assets/comun.js";
+import { DIAGNOSTICO } from "./assets/datos.js";
+import { iniciarAlumno, leer, guardar } from "./assets/datastore.js";
+
+const $ = (id) => document.getElementById(id);
+const FORMAS = ["▲", "◆", "●", "■"];
+let uid = null, nombre = "", respuestas = {}, i = 0;
+
+function mostrar(id) { ["inicio", "juego", "fin"].forEach((s) => $(s).classList.toggle("oculto", s !== id)); }
+
+function pintar() {
+  const q = DIAGNOSTICO[i];
+  $("contador").textContent = `Pregunta ${i + 1} de ${DIAGNOSTICO.length}`;
+  $("barra").style.width = `${(i / DIAGNOSTICO.length) * 100}%`;
+  $("pregunta").textContent = q.texto;
+  $("atras").style.visibility = i === 0 ? "hidden" : "visible";
+  const cont = $("opciones");
+  cont.innerHTML = "";
+  q.opciones.forEach((txt, k) => {
+    const b = document.createElement("button");
+    b.className = `opcion o${k}` + (respuestas[q.id] === k ? " elegida" : "");
+    b.innerHTML = `<span class="forma" aria-hidden="true">${FORMAS[k]}</span><span></span>`;
+    b.lastChild.textContent = txt;
+    b.onclick = () => responder(q.id, k);
+    cont.appendChild(b);
+  });
+}
+
+async function responder(qid, k) {
+  respuestas[qid] = k;
+  $("estado").textContent = "Guardando…"; $("estado").className = "estado";
+  try {
+    await guardar("diagnostico", uid, { nombre, respuestas: { [qid]: k } });
+    $("estado").textContent = "Guardado ✓"; $("estado").className = "estado ok";
+  } catch (e) {
+    console.error(e);
+    $("estado").textContent = "No se pudo guardar. Revisa tu conexión."; $("estado").className = "estado err";
+    return;
+  }
+  if (i < DIAGNOSTICO.length - 1) { i++; pintar(); }
+  else { $("nombre-fin").textContent = nombre.split(" ")[0]; mostrar("fin"); }
+}
+
+$("atras").onclick = () => { if (i > 0) { i--; pintar(); } };
+$("revisar").onclick = () => { i = 0; mostrar("juego"); pintar(); };
+
+$("empezar").onclick = async () => {
+  nombre = $("nombre").value.trim();
+  if (nombre.length < 2) { $("err-inicio").textContent = "Escribe tu nombre para continuar."; return; }
+  $("empezar").disabled = true; $("err-inicio").textContent = "";
+  try {
+    uid = await iniciarAlumno();
+    const previo = await leer("diagnostico", uid);
+    respuestas = (previo && previo.respuestas) || {};
+    await guardar("diagnostico", uid, { nombre, respuestas: {} });
+    try { localStorage.setItem("ia-rh-nombre", nombre); } catch {}
+    const pendiente = DIAGNOSTICO.findIndex((q) => respuestas[q.id] === undefined);
+    if (pendiente === -1) { $("nombre-fin").textContent = nombre.split(" ")[0]; mostrar("fin"); }
+    else { i = pendiente; mostrar("juego"); pintar(); }
+  } catch (e) {
+    console.error(e);
+    $("err-inicio").textContent = "No pudimos conectarnos. Revisa tu internet e inténtalo de nuevo.";
+  } finally { $("empezar").disabled = false; }
+};
+
+try { $("nombre").value = localStorage.getItem("ia-rh-nombre") || ""; } catch {}
+</script>
+<script type="module" src="assets/asistente.js"></script>
+</body>
+</html>

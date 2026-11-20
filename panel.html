@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel del ponente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="encabezado"><div class="contenedor">
+  <a class="marca" href="index.html"><span class="punto"></span>Panel del ponente</a>
+  <div class="fila" style="gap:10px">
+    <span id="sesion" style="color:#BDBDBD;font-size:14px"></span>
+    <button id="salir" class="boton secundario oculto" style="color:#fff;border-color:rgba(255,255,255,.3);min-height:38px;padding:6px 14px">Salir</button>
+  </div>
+</div></header>
+
+<main class="contenedor seccion">
+  <!-- Acceso -->
+  <section id="acceso" class="tarjeta estrecho oculto" style="margin:0 auto">
+    <h2>Acceso del ponente</h2>
+    <p style="color:var(--suave)">Entra con la cuenta de Google registrada en la configuración del sitio.</p>
+    <button id="entrar" class="boton oscuro">Entrar con Google</button>
+    <p id="err-acceso" class="estado err"></p>
+  </section>
+
+  <!-- Panel -->
+  <section id="panel" class="oculto">
+    <div class="pestanas" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="diag">Diagnóstico en vivo</button>
+      <button role="tab" aria-selected="false" data-tab="ejer">Ejercicios</button>
+      <button role="tab" aria-selected="false" data-tab="eval">Evaluación y encuesta</button>
+    </div>
+
+    <!-- Diagnóstico -->
+    <div id="tab-diag">
+      <div class="metricas">
+        <div class="metrica"><div class="v" id="m-part">0</div><div class="l">Participantes</div></div>
+        <div class="metrica"><div class="v" id="m-comp">0</div><div class="l">Terminaron</div></div>
+        <div class="metrica"><div class="v" id="m-aciertos">–</div><div class="l">Aciertos promedio (preguntas 4 a 11)</div></div>
+      </div>
+      <div class="tarjeta">
+        <div class="fila" style="justify-content:space-between;margin-bottom:12px">
+          <span class="chip navy" id="d-num"></span>
+          <span class="ayuda" id="d-resp"></span>
+        </div>
+        <div class="pregunta-grande" id="d-texto" style="margin-bottom:16px"></div>
+        <div id="d-barras"></div>
+        <div id="d-nota" class="oculto" style="margin-top:14px;background:var(--ok-suave);border-radius:10px;padding:12px 14px;color:#1F5A41"></div>
+        <div class="fila" style="margin-top:18px;justify-content:space-between">
+          <div class="fila">
+            <button id="d-ant" class="boton secundario">← Anterior</button>
+            <button id="d-sig" class="boton secundario">Siguiente →</button>
+          </div>
+          <button id="d-revelar" class="boton">Mostrar respuesta</button>
+        </div>
+      </div>
+      <div class="tarjeta" style="margin-top:16px">
+        <div class="fila" style="justify-content:space-between">
+          <h3 style="margin:0">Quién ya contestó</h3>
+          <button id="d-borrar" class="boton peligro">Borrar respuestas del diagnóstico</button>
+        </div>
+        <div id="d-lista" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- Ejercicios -->
+    <div id="tab-ejer" class="oculto">
+      <div class="metricas">
+        <div class="metrica"><div class="v" id="e-part">0</div><div class="l">Alumnos</div></div>
+        <div class="metrica"><div class="v" id="e-equipos">0</div><div class="l">Equipos</div></div>
+        <div class="metrica"><div class="v" id="e-avance">–</div><div class="l">Avance promedio</div></div>
+      </div>
+      <div class="tarjeta" style="margin-bottom:16px">
+        <div class="fila">
+          <div class="campo" style="margin:0"><label for="f-ej">Ejercicio</label><select id="f-ej"></select></div>
+          <div class="campo" style="margin:0"><label for="f-eq">Equipo</label><select id="f-eq"><option value="">Todos los equipos</option></select></div>
+          <button id="csv" class="boton secundario" style="align-self:flex-end">Descargar todo (CSV)</button>
+        </div>
+      </div>
+      <div id="e-respuestas"></div>
+      <div class="tarjeta" style="margin-top:16px">
+        <div class="fila" style="justify-content:space-between">
+          <h3 style="margin:0">Avance por alumno</h3>
+          <button id="e-borrar" class="boton peligro">Borrar respuestas de ejercicios</button>
+        </div>
+        <div id="e-lista" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div id="tab-eval" class="oculto">
+      <div class="metricas">
+        <div class="metrica"><div class="v" id="v-part">0</div><div class="l">Evaluaciones enviadas</div></div>
+        <div class="metrica"><div class="v" id="v-prom">–</div><div class="l">Calificación promedio</div></div>
+        <div class="metrica"><div class="v" id="v-sat">–</div><div class="l">Satisfacción general (1 a 5)</div></div>
+      </div>
+      <div class="tarjeta" style="margin-bottom:16px"><h3 style="margin-top:0">Aciertos por pregunta</h3><p class="ayuda">Ordenadas de menor a mayor: las primeras son las que conviene repasar con el grupo.</p><div id="v-preg"></div></div>
+      <div class="tarjeta" style="margin-bottom:16px"><h3 style="margin-top:0">Encuesta de satisfacción</h3><div id="v-enc"></div></div>
+      <div class="tarjeta" style="margin-bottom:16px"><h3 style="margin-top:0">Comentarios</h3><div id="v-com"></div></div>
+      <div class="tarjeta"><div class="fila" style="justify-content:space-between"><h3 style="margin:0">Calificaciones por alumno</h3><span class="fila" style="gap:8px"><button id="v-csv" class="boton secundario">Descargar CSV</button><button id="v-borrar" class="boton peligro">Borrar evaluación y encuesta</button></span></div><div id="v-lista" style="margin-top:10px"></div></div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { esc } from "./assets/comun.js";
+import { DIAGNOSTICO, EJERCICIOS } from "./assets/datos.js";
+import { EVALUACION, ENCUESTA, calificar } from "./assets/evaluacion-datos.js";
+import { modoDemo, observarSesion, entrarPonente, salirPonente, observar, borrarTodo } from "./assets/datastore.js";
+
+const $ = (id) => document.getElementById(id);
+const COLORES = ["var(--op1)", "var(--op2)", "var(--op3)", "var(--op4)"];
+let evals = [], opins = [];
+let diag = [], ejer = [], qi = 0, revelar = false, iniciado = false;
+const hora = (t) => t ? new Date(t).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }) : "";
+
+// ---------- Acceso ----------
+observarSesion(({ ok, correo, ajeno }) => {
+  $("sesion").textContent = correo || "";
+  $("salir").classList.toggle("oculto", modoDemo || !correo);
+  if (ok) { $("acceso").classList.add("oculto"); $("panel").classList.remove("oculto"); iniciar(); }
+  else {
+    $("panel").classList.add("oculto"); $("acceso").classList.remove("oculto");
+    $("err-acceso").textContent = ajeno ? `La cuenta ${correo} no tiene acceso. Entra con la cuenta registrada.` : "";
+  }
+});
+$("entrar").onclick = async () => {
+  $("err-acceso").textContent = "";
+  try { await entrarPonente(); } catch (e) { console.error(e); $("err-acceso").textContent = "No se pudo iniciar sesión. Revisa que este dominio esté autorizado en Firebase."; }
+};
+$("salir").onclick = () => salirPonente();
+
+// ---------- Pestañas ----------
+document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => {
+  document.querySelectorAll("[data-tab]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+  $("tab-diag").classList.toggle("oculto", b.dataset.tab !== "diag");
+  $("tab-ejer").classList.toggle("oculto", b.dataset.tab !== "ejer");
+  $("tab-eval").classList.toggle("oculto", b.dataset.tab !== "eval");
+});
+
+function iniciar() {
+  if (iniciado) return; iniciado = true;
+  const err = (e) => { console.error(e); alert("No se pudieron leer los datos. Revisa las reglas de Firestore y que tu correo coincida."); };
+  observar("diagnostico", (l) => { diag = l; pintarDiag(); }, err);
+  observar("ejercicios", (l) => { ejer = l; pintarEjer(); }, err);
+  observar("evaluacion", (l) => { evals = l; pintarEval(); }, err);
+  observar("opinion", (l) => { opins = l; pintarEval(); }, err);
+  $("f-ej").innerHTML = EJERCICIOS.map((e, n) => `<option value="${e.id}">${n + 1}. ${esc(e.titulo)} (${esc(e.dia)})</option>`).join("");
+  $("f-ej").onchange = pintarEjer; $("f-eq").onchange = pintarEjer;
+}
+
+// ---------- Diagnóstico ----------
+function pintarDiag() {
+  const q = DIAGNOSTICO[qi];
+  const conResp = diag.filter((d) => d.respuestas && d.respuestas[q.id] !== undefined);
+  const cuenta = q.opciones.map((_, k) => conResp.filter((d) => d.respuestas[q.id] === k).length);
+  const max = Math.max(1, ...cuenta);
+  $("d-num").textContent = `Pregunta ${qi + 1} de ${DIAGNOSTICO.length}`;
+  $("d-resp").textContent = `${conResp.length} de ${diag.length} respondieron`;
+  $("d-texto").textContent = q.texto;
+  $("d-barras").innerHTML = q.opciones.map((o, k) => `
+    <div class="barra-fila ${revelar && q.correcta === k ? "correcta" : ""}">
+      <span class="etq">${esc(o)}</span>
+      <span class="pista"><span class="relleno" style="display:block;width:${(cuenta[k] / max) * 100}%;background:${COLORES[k]};opacity:${revelar && q.correcta !== null && q.correcta !== k ? .35 : 1}"></span></span>
+      <span class="n">${cuenta[k]}</span>
+    </div>`).join("");
+  $("d-nota").classList.toggle("oculto", !revelar);
+  $("d-nota").textContent = (q.correcta !== null ? `Respuesta: ${q.opciones[q.correcta]}. ` : "") + q.nota;
+  $("d-revelar").textContent = revelar ? "Ocultar respuesta" : (q.correcta === null ? "Mostrar nota" : "Mostrar respuesta");
+  $("d-ant").disabled = qi === 0; $("d-sig").disabled = qi === DIAGNOSTICO.length - 1;
+
+  const evaluables = DIAGNOSTICO.filter((x) => x.correcta !== null);
+  const completos = diag.filter((d) => DIAGNOSTICO.every((x) => d.respuestas && d.respuestas[x.id] !== undefined));
+  $("m-part").textContent = diag.length;
+  $("m-comp").textContent = completos.length;
+  $("m-aciertos").textContent = completos.length
+    ? Math.round(completos.reduce((s, d) => s + evaluables.filter((x) => d.respuestas[x.id] === x.correcta).length, 0) / completos.length * 10) / 10 + ` / ${evaluables.length}`
+    : "–";
+  $("d-lista").innerHTML = diag.length ? diag.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "")).map((d) => {
+    const n = Object.keys(d.respuestas || {}).length;
+    return `<div class="respuesta fila" style="justify-content:space-between"><span class="quien">${esc(d.nombre || "Sin nombre")}</span><span class="chip ${n >= DIAGNOSTICO.length ? "ok" : "navy"}">${n}/${DIAGNOSTICO.length}</span></div>`;
+  }).join("") : `<p class="vacio">Aún no hay respuestas.</p>`;
+}
+$("d-ant").onclick = () => { qi--; revelar = false; pintarDiag(); };
+$("d-sig").onclick = () => { qi++; revelar = false; pintarDiag(); };
+$("d-revelar").onclick = () => { revelar = !revelar; pintarDiag(); };
+$("d-borrar").onclick = async () => { if (confirm("¿Borrar TODAS las respuestas del diagnóstico? No se puede deshacer.")) await borrarTodo("diagnostico"); };
+
+// ---------- Ejercicios ----------
+function pintarEjer() {
+  const equipos = [...new Set(ejer.map((e) => e.equipo).filter(Boolean))].sort();
+  const sel = $("f-eq").value;
+  $("f-eq").innerHTML = `<option value="">Todos los equipos</option>` + equipos.map((e) => `<option ${e === sel ? "selected" : ""}>${esc(e)}</option>`).join("");
+  const total = EJERCICIOS.reduce((s, e) => s + e.preguntas.length, 0);
+  const hechas = (a) => Object.values(a.respuestas || {}).filter((v) => String(v).trim() !== "").length;
+  $("e-part").textContent = ejer.length;
+  $("e-equipos").textContent = equipos.length;
+  $("e-avance").textContent = ejer.length ? Math.round(ejer.reduce((s, a) => s + hechas(a), 0) / ejer.length / total * 100) + "%" : "–";
+
+  const ej = EJERCICIOS.find((e) => e.id === $("f-ej").value) || EJERCICIOS[0];
+  const alumnos = ejer.filter((a) => !sel || a.equipo === sel).sort((a, b) => (a.equipo || "").localeCompare(b.equipo || "") || (a.nombre || "").localeCompare(b.nombre || ""));
+  $("e-respuestas").innerHTML = ej.preguntas.map((p) => {
+    const filas = alumnos.filter((a) => a.respuestas && String(a.respuestas[p.id] ?? "").trim() !== "").map((a) => {
+      const v = a.respuestas[p.id];
+      const txt = p.tipo === "opcion" ? (p.opciones[v] ?? v) + (p.correcta !== undefined && v === p.correcta ? " ✓" : "") : v;
+      return `<div class="respuesta"><div class="quien">${esc(a.nombre)} <span class="chip navy">${esc(a.equipo)}</span> <span class="ayuda">${hora(a.actualizado)}</span></div><div class="txt">${esc(txt)}</div></div>`;
+    }).join("");
+    return `<div class="tarjeta" style="margin-bottom:12px"><h3>${esc(p.id)} ${esc(p.texto)}</h3>${filas || `<p class="vacio">Sin respuestas todavía.</p>`}</div>`;
+  }).join("");
+
+  $("e-lista").innerHTML = alumnos.length ? alumnos.map((a) =>
+    `<div class="respuesta fila" style="justify-content:space-between"><span class="quien">${esc(a.nombre)} <span class="chip navy">${esc(a.equipo)}</span></span><span class="chip ${hechas(a) === total ? "ok" : ""}">${hechas(a)}/${total}</span></div>`).join("")
+    : `<p class="vacio">Aún no hay alumnos registrados.</p>`;
+}
+$("e-borrar").onclick = async () => { if (confirm("¿Borrar TODAS las respuestas de los ejercicios? No se puede deshacer.")) await borrarTodo("ejercicios"); };
+
+$("csv").onclick = () => {
+  const cols = EJERCICIOS.flatMap((e) => e.preguntas.map((p) => p));
+  const q = (s) => `"${String(s ?? "").replace(/"/g, '""')}"`;
+  let csv = ["Nombre", "Equipo", ...cols.map((p) => p.id + " " + p.texto)].map(q).join(",") + "\n";
+  ejer.forEach((a) => {
+    csv += [a.nombre, a.equipo, ...cols.map((p) => {
+      const v = a.respuestas ? a.respuestas[p.id] : "";
+      return p.tipo === "opcion" && v !== undefined && v !== "" ? p.opciones[v] : v;
+    })].map(q).join(",") + "\n";
+  });
+  csv += "\n" + ["Diagnóstico: nombre", ...DIAGNOSTICO.map((x, n) => `P${n + 1}`)].map(q).join(",") + "\n";
+  diag.forEach((d) => { csv += [d.nombre, ...DIAGNOSTICO.map((x) => d.respuestas && d.respuestas[x.id] !== undefined ? x.opciones[d.respuestas[x.id]] : "")].map(q).join(",") + "\n"; });
+  const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a"); a.href = url; a.download = "respuestas-curso-ia.csv"; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+};
+
+// ---------- Evaluación y encuesta ----------
+function pintarEval() {
+  const env = evals.filter((e) => e.enviado);
+  $("v-part").textContent = env.length;
+  const cal = env.map((e) => ({ e, r: calificar(e.respuestas || {}) }));
+  $("v-prom").textContent = cal.length ? (cal.reduce((a, x) => a + x.r.puntos, 0) / cal.length).toFixed(1) + " / " + EVALUACION.length : "–";
+  const porQ = EVALUACION.map((q, n) => ({ q, n, pct: cal.length ? Math.round(100 * cal.reduce((a, x) => a + x.r.detalle[q.id], 0) / cal.length) : 0 }));
+  porQ.sort((a, b) => a.pct - b.pct);
+  $("v-preg").innerHTML = cal.length ? porQ.map(({ q, n, pct }) => `<div class="barra-fila"><span>${n + 1}. ${esc(q.texto)}</span><div class="pista"><div class="relleno" style="width:${pct}%;background:${pct < 60 ? "#C8372D" : pct < 80 ? "#D4A017" : "#2E7D5B"}"></div></div><span class="n">${pct} %</span></div>`).join("") : `<p class="vacio">Sin evaluaciones todavía.</p>`;
+  const ops = opins.filter((o) => o.respuestas && o.respuestas.s1);
+  const prom = (id) => ops.length ? (ops.reduce((a, o) => a + (Number(o.respuestas[id]) || 0), 0) / ops.length) : 0;
+  $("v-sat").textContent = ops.length ? prom("s7").toFixed(1) : "–";
+  const rec = (v) => ops.filter((o) => o.respuestas.s8 === v).length;
+  $("v-enc").innerHTML = ops.length ? ENCUESTA.escala.map((p) => `<div class="barra-fila"><span>${esc(p.texto)}</span><div class="pista"><div class="relleno" style="width:${prom(p.id) * 20}%;background:#E6007E"></div></div><span class="n">${prom(p.id).toFixed(1)}</span></div>`).join("") + `<p style="margin:12px 0 0"><b>¿Lo recomendarían?</b> Sí: ${rec("Sí")} · Tal vez: ${rec("Tal vez")} · No: ${rec("No")} <span class="ayuda">(${ops.length} respuestas)</span></p>` : `<p class="vacio">Sin respuestas todavía.</p>`;
+  const coms = ops.flatMap((o) => ENCUESTA.abiertas.map((p) => ({ p, t: (o.respuestas[p.id] || "").trim(), n: o.nombre })).filter((x) => x.t));
+  $("v-com").innerHTML = coms.length ? coms.map((x) => `<div class="fila-resp"><span class="chip">${esc(x.p.texto.replace(" (opcional)", ""))}</span><p style="margin:6px 0 0">${esc(x.t)}</p><span class="ayuda">${esc(x.n)}</span></div>`).join("") : `<p class="vacio">Sin comentarios todavía.</p>`;
+  const lista = [...cal].sort((a, b) => b.r.puntos - a.r.puntos);
+  $("v-lista").innerHTML = lista.length ? lista.map(({ e, r }) => `<div class="fila" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--linea)"><span><b>${esc(e.nombre)}</b> <span class="chip">${esc(e.equipo || "")}</span></span><b>${r.puntos} / ${r.total}</b></div>`).join("") : `<p class="vacio">Sin evaluaciones todavía.</p>`;
+}
+$("v-csv") && ($("v-csv").onclick = () => {
+  const filas = [["nombre", "equipo", "calificacion", ...EVALUACION.map((q) => q.id)]];
+  evals.filter((e) => e.enviado).forEach((e) => { const r = calificar(e.respuestas || {}); filas.push([e.nombre, e.equipo || "", r.puntos, ...EVALUACION.map((q) => r.detalle[q.id])]); });
+  filas.push([]); filas.push(["encuesta: nombre", ...ENCUESTA.escala.map((p) => p.id), "recomienda", "le_gusto", "mejoraria", "mensaje"]);
+  opins.forEach((o) => { const x = o.respuestas || {}; filas.push([o.nombre, ...ENCUESTA.escala.map((p) => x[p.id]), x.s8, x.s9, x.s10, x.s11]); });
+  const csv = filas.map((f) => f.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv" })); a.download = "evaluacion-y-encuesta.csv"; a.click();
+});
+$("v-borrar") && ($("v-borrar").onclick = async () => { if (confirm("¿Borrar todas las evaluaciones y respuestas de la encuesta? No se puede deshacer.")) { await borrarTodo("evaluacion"); await borrarTodo("opinion"); } });
+</script>
+</body>
+</html>
