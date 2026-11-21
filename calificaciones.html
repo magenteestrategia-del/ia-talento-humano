@@ -28,7 +28,7 @@
 <section class="banda"><div class="contenedor">
   <div class="eti">Paso 07 · Resultados</div>
   <h1>Tus <span class="serif">calificaciones</span></h1>
-  <p>Tu participación en el curso y el resultado de tu evaluación final. Busca tu nombre en la lista.</p>
+  <p>Tu participación, tu evaluación final y tus respuestas, con las correctas. Busca tu nombre y da clic en <b>Ver mis respuestas</b>.</p>
 </div></section>
 
 <main class="contenedor seccion">
@@ -38,20 +38,62 @@
     <p id="estado" class="estado" style="margin-top:10px">Cargando…</p>
     <div id="tabla" style="overflow-x:auto;margin-top:8px"></div>
   </div>
+  <div id="detalle" style="margin-top:20px"></div>
 </main>
 
 <script type="module">
 import { esc } from "./assets/comun.js";
 import { leer } from "./assets/datastore.js";
+import { DIAGNOSTICO, EJERCICIOS } from "./assets/datos.js";
+import { EVALUACION, calificar } from "./assets/evaluacion-datos.js";
 const $ = (id) => document.getElementById(id);
 const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 let lista = [];
 function pintar() {
   const q = norm($("buscar").value.trim());
   const filas = q ? lista.filter((f) => norm(f.nombre).includes(q)) : lista;
-  $("tabla").innerHTML = filas.length ? `<table class="tabla-cal"><thead><tr><th>Alumno</th><th>Equipo</th><th>Diagnóstico (antes)</th><th>Ejercicios</th><th>Participación</th><th>Evaluación (después)</th><th>Final</th></tr></thead><tbody>` +
-    filas.map((f) => `<tr class="${q ? "yo" : ""}"><td><b>${esc(f.nombre)}</b></td><td>${esc(f.equipo || "")}</td><td>${f.diagnostico ? `${f.diagAciertos ?? "✓"}/${f.diagTotal ?? 8}` : "–"}</td><td>${f.ejercicios}/${f.totalEjercicios}</td><td>${f.participacion}</td><td>${f.evaluacion === null || f.evaluacion === undefined ? '<span class="ayuda">Pendiente</span>' : `${f.evalPuntos}/${f.evalTotal} <span class="ayuda">(${f.evaluacion} %)</span>`}</td><td><b>${f.final}</b></td></tr>`).join("") + `</tbody></table>`
+  $("tabla").innerHTML = filas.length ? `<table class="tabla-cal"><thead><tr><th>Alumno</th><th>Equipo</th><th>Diagnóstico (antes)</th><th>Ejercicios</th><th>Participación</th><th>Evaluación (después)</th><th>Final</th><th></th></tr></thead><tbody>` +
+    filas.map((f) => `<tr class="${q ? "yo" : ""}"><td><b>${esc(f.nombre)}</b></td><td>${esc(f.equipo || "")}</td><td>${f.diagnostico ? `${f.diagAciertos ?? "✓"}/${f.diagTotal ?? 8}` : "–"}</td><td>${f.ejercicios}/${f.totalEjercicios}</td><td>${f.participacion}</td><td>${f.evaluacion === null || f.evaluacion === undefined ? '<span class="ayuda">Pendiente</span>' : `${f.evalPuntos}/${f.evalTotal} <span class="ayuda">(${f.evaluacion} %)</span>`}</td><td><b>${f.final}</b></td><td><button class="boton secundario ver" data-i="${lista.indexOf(f)}" style="min-height:34px;padding:4px 12px">Ver mis respuestas</button></td></tr>`).join("") + `</tbody></table>`
     : `<p class="vacio">${q ? "No encontramos ese nombre. Prueba solo con tu primer nombre." : "Sin datos."}</p>`;
+  $("tabla").querySelectorAll(".ver").forEach((b) => b.onclick = () => verDetalle(lista[Number(b.dataset.i)]));
+}
+const marca = (ok) => ok ? "✅" : "❌";
+const CLAVES = { e2: "Los 7 errores eran: 1) “Liderazgo: ser buena persona y caerle bien a todos” no es observable; 2) la pregunta de la edad discrimina; 3) la de hijos o embarazo discrimina; 4) la pregunta 4 es hipotética (“¿qué harías?”), no conductual; 5) la de religión discrimina; 6) el “artículo 245-B” es un dato legal inventado por la IA; 7) la escala califica rapidez y seguridad, no conductas. Las preguntas 1 y 5 sí eran correctas (STAR)." };
+function verDetalle(f) {
+  const d = f.detalle || {}; const dr = d.diag || {}, er = d.eval || {}, ej = d.ej || {};
+  let h = `<div class="tarjeta" style="border-top:5px solid #E6007E"><h2 style="margin-top:0">Respuestas de ${esc(f.nombre)}</h2><p class="ayuda">Diagnóstico (antes): ${f.diagnostico ? f.diagAciertos + "/" + f.diagTotal : "no lo contestó"} · Evaluación (después): ${f.evaluacion === null || f.evaluacion === undefined ? "pendiente" : f.evalPuntos + "/" + f.evalTotal} · Participación: ${f.participacion} · Final: <b>${f.final}</b></p></div>`;
+  // Diagnóstico
+  h += `<h3 style="margin-top:24px">1. Diagnóstico inicial (viernes)</h3>`;
+  h += Object.keys(dr).length ? DIAGNOSTICO.filter((q) => q.correcta !== null).map((q) => {
+    const v = dr[q.id]; const tu = v === undefined ? "Sin respuesta" : q.opciones[v];
+    return `<div class="tarjeta" style="margin-bottom:10px"><b>${esc(q.texto)}</b><p style="margin:8px 0 0">${marca(v === q.correcta)} Tu respuesta: ${esc(tu)}</p>${v === q.correcta ? "" : `<p style="margin:4px 0 0"><b>Correcta:</b> ${esc(q.opciones[q.correcta])}</p>`}<p class="ayuda" style="margin:6px 0 0">${esc(q.nota || "")}</p></div>`;
+  }).join("") : `<p class="vacio">No hay respuestas del diagnóstico con este nombre.</p>`;
+  // Evaluación
+  h += `<h3 style="margin-top:24px">2. Evaluación final (sábado)</h3>`;
+  if (Object.keys(er).length) {
+    const r = calificar(er);
+    h += EVALUACION.map((q, n) => {
+      const v = er[q.id], pt = r.detalle[q.id];
+      let tu = "Sin respuesta", corr = "";
+      if (q.tipo === "om") { tu = v === undefined ? tu : q.opciones[v]; corr = q.opciones[q.correcta]; }
+      if (q.tipo === "vf") { tu = v === undefined ? tu : (v ? "Verdadero" : "Falso"); corr = q.correcta ? "Verdadero" : "Falso"; }
+      if (q.tipo === "rel") { tu = q.pares.map((par, k) => `${par[0]} → ${v && v[k] != null ? q.pares[v[k]][1] : "—"}`).join(" · "); corr = q.pares.map((par) => `${par[0]} → ${par[1]}`).join(" · "); }
+      const icono = pt === 1 ? "✅" : pt > 0 ? "🟡" : "❌";
+      return `<div class="tarjeta" style="margin-bottom:10px"><b>${n + 1}. ${esc(q.texto)}</b><p style="margin:8px 0 0">${icono} Tu respuesta: ${esc(tu)}</p>${pt === 1 ? "" : `<p style="margin:4px 0 0"><b>Correcta:</b> ${esc(corr)}</p>`}<p class="ayuda" style="margin:6px 0 0">${esc(q.explicacion)}</p></div>`;
+    }).join("");
+  } else h += `<p class="vacio">No hay evaluación final enviada con este nombre.</p>`;
+  // Ejercicios
+  h += `<h3 style="margin-top:24px">3. Ejercicios</h3><p class="ayuda">Son preguntas abiertas: no hay una sola respuesta correcta. Compara la tuya con el ejemplo de buena respuesta.</p>`;
+  h += EJERCICIOS.map((e, n) => {
+    const filas = e.preguntas.map((p) => {
+      const x = ej[p.id]; if (!x) return `<p style="margin:8px 0 0"><b>${esc(p.id)} ${esc(p.texto)}</b><br><span class="ayuda">Sin respuesta</span></p>`;
+      let v = x.v; if (p.tipo === "opcion" && p.opciones) v = (p.opciones[v] ?? v) + (p.correcta !== undefined && p.correcta !== null ? (Number(x.v) === p.correcta ? " ✅" : ` ❌ (correcta: ${p.opciones[p.correcta]})`) : "");
+      return `<p style="margin:10px 0 0"><b>${esc(p.id)} ${esc(p.texto)}</b>${x.eq ? ' <span class="chip">respuesta de tu equipo</span>' : ""}<br>${esc(v)}</p>`;
+    }).join("");
+    return `<div class="tarjeta" style="margin-bottom:10px"><h4 style="margin:0">Ejercicio ${n + 1}. ${esc(e.titulo)}</h4>${filas}${e.ejemplo ? `<div class="ej-ejemplo" style="margin-top:10px"><b>✅ Así se ve una buena respuesta</b><p>${esc(e.ejemplo)}</p></div>` : ""}${CLAVES[e.id] ? `<div class="caja-ayuda" style="margin-top:10px"><b>Respuesta completa.</b> ${esc(CLAVES[e.id])}</div>` : ""}</div>`;
+  }).join("");
+  $("detalle").innerHTML = h;
+  $("detalle").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 $("buscar").addEventListener("input", pintar);
 try {

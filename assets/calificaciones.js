@@ -35,38 +35,41 @@ export function calcularCalificaciones({ diag = [], ejer = [], evals = [] }) {
   };
   const obtener = (nombre) => {
     let p = buscar(nombre);
-    if (!p) { p = { claves: new Set(), nombre: nombre.trim(), equipo: "", diag: false, diagAciertos: null, propias: new Set(), equipos: new Set(), eval: null }; personas.push(p); }
+    if (!p) { p = { claves: new Set(), nombre: nombre.trim(), equipo: "", diag: false, diagAciertos: null, diagResp: null, evalResp: null, ejResp: {}, propias: new Set(), equipos: new Set(), eval: null }; personas.push(p); }
     p.claves.add(norm(nombre));
     if (nombre.trim().length > p.nombre.length) p.nombre = nombre.trim();
     return p;
   };
 
   // Respuestas de cada equipo (para los ejercicios en equipo).
-  const porEquipo = {};
+  const porEquipo = {}, respEquipo = {};
   ejer.forEach((d) => {
     const eq = d.equipo || ""; if (!eq) return;
     porEquipo[eq] = porEquipo[eq] || new Set();
-    Object.entries(d.respuestas || {}).forEach(([pid, v]) => { if (contestada(v) && ES_EQUIPO[EJ_DE[pid]]) porEquipo[eq].add(pid); });
+    respEquipo[eq] = respEquipo[eq] || {};
+    Object.entries(d.respuestas || {}).forEach(([pid, v]) => { if (contestada(v) && ES_EQUIPO[EJ_DE[pid]]) { porEquipo[eq].add(pid); if (!(pid in respEquipo[eq])) respEquipo[eq][pid] = v; } });
   });
 
   ejer.forEach((d) => separarNombres(d.nombre).forEach((nom) => {
     const p = obtener(nom);
     if (d.equipo) { p.equipos.add(d.equipo); p.equipo = p.equipo || d.equipo; }
-    Object.entries(d.respuestas || {}).forEach(([pid, v]) => { if (contestada(v) && EJ_DE[pid]) p.propias.add(pid); });
+    Object.entries(d.respuestas || {}).forEach(([pid, v]) => { if (contestada(v) && EJ_DE[pid]) { p.propias.add(pid); p.ejResp[pid] = { v, eq: false }; } });
   }));
   evals.filter((e) => e.enviado).forEach((e) => separarNombres(e.nombre).forEach((nom) => {
     const p = obtener(nom);
     const r = calificar(e.respuestas || {});
-    if (!p.eval || r.puntos > p.eval.puntos) p.eval = r;
+    if (!p.eval || r.puntos > p.eval.puntos) { p.eval = r; p.evalResp = e.respuestas || {}; }
     if (e.equipo && !p.equipo) p.equipo = e.equipo;
   }));
   diag.forEach((d) => {
     if (!d.respuestas || !Object.keys(d.respuestas).length) return;
     const ac = DIAG_EVAL.filter((q) => d.respuestas[q.id] === q.correcta).length;
-    separarNombres(d.nombre).forEach((nom) => { const p = obtener(nom); p.diag = true; if (p.diagAciertos === null || ac > p.diagAciertos) p.diagAciertos = ac; });
+    separarNombres(d.nombre).forEach((nom) => { const p = obtener(nom); p.diag = true; if (p.diagAciertos === null || ac > p.diagAciertos) { p.diagAciertos = ac; p.diagResp = d.respuestas; } });
   });
 
   return personas.map((p) => {
+    const ejResp = { ...p.ejResp };
+    p.equipos.forEach((eq) => Object.entries(respEquipo[eq] || {}).forEach(([pid, v]) => { if (!ejResp[pid]) ejResp[pid] = { v, eq: true }; }));
     const hechas = new Set(p.propias);
     p.equipos.forEach((eq) => (porEquipo[eq] || new Set()).forEach((pid) => hechas.add(pid)));
     const ejPct = TOTAL_PREG ? hechas.size / TOTAL_PREG : 0;
@@ -79,6 +82,7 @@ export function calcularCalificaciones({ diag = [], ejer = [], evals = [] }) {
       ejercicios: hechas.size, totalEjercicios: TOTAL_PREG,
       evalPuntos: p.eval ? p.eval.puntos : null, evalTotal: EVALUACION.length,
       participacion, evaluacion, final,
+      detalle: { diag: p.diagResp || {}, eval: p.evalResp || {}, ej: ejResp },
     };
   }).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 }
