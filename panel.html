@@ -127,7 +127,7 @@ import { esc } from "./assets/comun.js";
 import { DIAGNOSTICO, EJERCICIOS } from "./assets/datos.js";
 import { EVALUACION, ENCUESTA, calificar } from "./assets/evaluacion-datos.js";
 import { modoDemo, observarSesion, entrarPonente, salirPonente, observar, borrarTodo, leer, guardar } from "./assets/datastore.js";
-import { calcularCalificaciones } from "./assets/calificaciones.js";
+import { calcularCalificaciones } from "./assets/calificaciones.js?v=4";
 
 const $ = (id) => document.getElementById(id);
 const COLORES = ["var(--op1)", "var(--op2)", "var(--op3)", "var(--op4)"];
@@ -295,11 +295,21 @@ function pintarCal() {
 }
 $("c-publicar").onclick = async () => {
   if (!confirm("Todo el grupo podrá ver esta lista en la página Calificaciones del sitio. ¿Publicar?")) return;
-  try { await guardar("publico", "calificaciones", { visible: true, lista: filasCal }); publicado = true; pintarCal(); $("c-estado").textContent = "Publicadas. Comparte el enlace: ia-talento-humano.vercel.app/calificaciones.html"; $("c-estado").className = "estado ok"; }
+  try { await guardar("publico", "calificaciones", { visible: true, lista: filasCal, curso: resumenCurso() }); publicado = true; pintarCal(); $("c-estado").textContent = "Publicadas. Comparte el enlace: ia-talento-humano.vercel.app/calificaciones.html"; $("c-estado").className = "estado ok"; }
   catch (e) { console.error(e); $("c-estado").textContent = "No se pudo publicar. Revisa que agregaste la regla de “publico” en Firestore."; $("c-estado").className = "estado err"; }
 };
+function resumenCurso() {
+  const ops = opins.filter((o) => o.respuestas && o.respuestas.s1);
+  const prom = (id) => ops.length ? Math.round(10 * ops.reduce((a, o) => a + (Number(o.respuestas[id]) || 0), 0) / ops.length) / 10 : null;
+  return {
+    n: ops.length,
+    escala: ENCUESTA.escala.map((p) => ({ texto: p.texto, prom: prom(p.id) })),
+    recomienda: ["Sí", "Tal vez", "No"].map((v) => ({ v, n: ops.filter((o) => o.respuestas.s8 === v).length })),
+    comentarios: ops.flatMap((o) => ENCUESTA.abiertas.map((p) => ({ tipo: p.texto.replace(" (opcional)", ""), texto: String(o.respuestas[p.id] || "").trim() })).filter((x) => x.texto)),
+  };
+}
 $("c-quitar").onclick = async () => {
-  try { await guardar("publico", "calificaciones", { visible: false, lista: [] }); publicado = false; pintarCal(); $("c-estado").textContent = "Se quitó la publicación. Los datos de los alumnos siguen intactos."; $("c-estado").className = "estado ok"; }
+  try { await guardar("publico", "calificaciones", { visible: false, lista: [], curso: null }); publicado = false; pintarCal(); $("c-estado").textContent = "Se quitó la publicación. Los datos de los alumnos siguen intactos."; $("c-estado").className = "estado ok"; }
   catch (e) { console.error(e); $("c-estado").textContent = "No se pudo quitar la publicación."; $("c-estado").className = "estado err"; }
 };
 $("c-csv").onclick = () => {

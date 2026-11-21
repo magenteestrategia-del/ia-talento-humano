@@ -39,6 +39,7 @@
     <div id="tabla" style="overflow-x:auto;margin-top:8px"></div>
   </div>
   <div id="detalle" style="margin-top:20px"></div>
+  <section id="curso" style="margin-top:32px"></section>
 </main>
 
 <script type="module">
@@ -95,11 +96,19 @@ function verDetalle(f) {
   $("detalle").innerHTML = h;
   $("detalle").scrollIntoView({ behavior: "smooth", block: "start" });
 }
+function pintarCurso(c) {
+  if (!c || !c.n) return;
+  const barras = c.escala.map((x) => `<div class="barra-fila"><span>${esc(x.texto)}</span><div class="pista"><div class="relleno" style="width:${(x.prom || 0) * 20}%;background:#E6007E"></div></div><span class="n">${x.prom ?? "–"}</span></div>`).join("");
+  const rec = c.recomienda.map((r) => `${esc(r.v)}: <b>${r.n}</b>`).join(" · ");
+  const coms = (c.comentarios || []).map((x) => `<div class="fila-resp" style="margin-top:14px"><span class="chip">${esc(x.tipo)}</span><p style="margin:6px 0 0">“${esc(x.texto)}”</p></div>`).join("");
+  $("curso").innerHTML = `<div class="tarjeta" style="border-top:5px solid #E6007E"><div class="eti" style="color:#E6007E;font-weight:800;letter-spacing:.12em;font-size:13px;text-transform:uppercase">Resultados del curso</div><h2 style="margin:6px 0 4px">Así evaluó el grupo el curso y a la ponente</h2><p class="ayuda">${c.n} respuestas a la encuesta de satisfacción · escala de 1 (muy en desacuerdo) a 5 (muy de acuerdo)</p>${barras}<p style="margin:14px 0 0"><b>¿Lo recomendarían a un colega?</b> ${rec}</p></div>` +
+    (coms ? `<div class="tarjeta" style="margin-top:16px"><h3 style="margin-top:0">Lo que dijeron</h3><p class="ayuda">Comentarios de la encuesta, sin nombres.</p>${coms}</div>` : "");
+}
 $("buscar").addEventListener("input", pintar);
 try {
   const d = await leer("publico", "calificaciones");
   if (!d || !d.visible || !Array.isArray(d.lista) || !d.lista.length) { $("estado").textContent = "Las calificaciones todavía no están publicadas. Vuelve más tarde."; }
-  else { lista = d.lista; $("estado").textContent = `${lista.length} alumnos.`; pintar(); }
+  else { lista = d.lista; $("estado").textContent = `${lista.length} alumnos.`; pintar(); pintarCurso(d.curso); }
 } catch (e) { console.error(e); $("estado").textContent = "No pudimos cargar las calificaciones. Recarga la página en un momento."; $("estado").className = "estado err"; }
 </script>
 <script type="module" src="assets/comun.js"></script>
