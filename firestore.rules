@@ -1,12 +1,12 @@
 rules_version = '2';
 // Reglas de seguridad del sitio del curso.
-// Reemplaza TU_CORREO@gmail.com por el mismo correo que pusiste en assets/config.js.
+// El correo de abajo es el de la ponente (el mismo de assets/config.js).
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function esPonente() {
       return request.auth != null
-        && request.auth.token.email == 'TU_CORREO@gmail.com'
+        && request.auth.token.email == 'magenteestrategia@gmail.com'
         && request.auth.token.email_verified == true;
     }
     function esDueno(uid) {
@@ -63,6 +63,12 @@ service cloud.firestore {
         && request.resource.data.respuestas is map
         && request.resource.data.respuestas.size() <= 20;
       allow delete: if esPonente();
+    }
+
+    // Calificaciones publicadas: las lee todo el grupo; solo la ponente las escribe.
+    match /publico/{doc} {
+      allow read: if true;
+      allow write: if esPonente();
     }
 
     // Todo lo demás está cerrado.

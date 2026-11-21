@@ -34,6 +34,7 @@
       <button role="tab" aria-selected="true" data-tab="diag">Diagnóstico en vivo</button>
       <button role="tab" aria-selected="false" data-tab="ejer">Ejercicios</button>
       <button role="tab" aria-selected="false" data-tab="eval">Evaluación y encuesta</button>
+      <button role="tab" aria-selected="false" data-tab="cal">Calificaciones</button>
     </div>
 
     <!-- Diagnóstico -->
@@ -103,6 +104,21 @@
       <div class="tarjeta" style="margin-bottom:16px"><h3 style="margin-top:0">Comentarios</h3><div id="v-com"></div></div>
       <div class="tarjeta"><div class="fila" style="justify-content:space-between"><h3 style="margin:0">Calificaciones por alumno</h3><span class="fila" style="gap:8px"><button id="v-csv" class="boton secundario">Descargar CSV</button><button id="v-borrar" class="boton peligro">Borrar evaluación y encuesta</button></span></div><div id="v-lista" style="margin-top:10px"></div></div>
     </div>
+    <!-- Calificaciones -->
+    <div id="tab-cal" class="oculto">
+      <div class="caja-ayuda"><b>Cómo se calcula.</b> <b>Diagnóstico (antes)</b>: aciertos en las 8 preguntas con respuesta correcta del diagnóstico inicial; es solo para comparar tu avance y no cuenta en la calificación. <b>Participación</b> (0 a 100): 10 puntos por el diagnóstico y 90 repartidos entre las preguntas de los ejercicios; los ejercicios en equipo cuentan para todo el equipo. <b>Evaluación</b>: el porcentaje de aciertos de la evaluación final. <b>Final</b>: 50 % participación y 50 % evaluación. Se calcula solo con lo que ya está guardado: no cambia ni borra nada.</div>
+      <div class="metricas" style="margin-top:14px">
+        <div class="metrica"><div class="v" id="c-n">0</div><div class="l">Alumnos</div></div>
+        <div class="metrica"><div class="v" id="c-prom">–</div><div class="l">Promedio final</div></div>
+        <div class="metrica"><div class="v" id="c-pub">No</div><div class="l">Publicadas para el grupo</div></div>
+      </div>
+      <div class="tarjeta">
+        <div class="fila" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h3 style="margin:0">Calificaciones por alumno</h3>
+          <span class="fila" style="gap:8px;flex-wrap:wrap"><button id="c-publicar" class="boton">Publicar para el grupo</button><button id="c-quitar" class="boton secundario">Quitar publicación</button><button id="c-csv" class="boton secundario">Descargar CSV</button></span></div>
+        <p id="c-estado" class="estado"></p>
+        <div id="c-tabla" style="overflow-x:auto"></div>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -110,11 +126,13 @@
 import { esc } from "./assets/comun.js";
 import { DIAGNOSTICO, EJERCICIOS } from "./assets/datos.js";
 import { EVALUACION, ENCUESTA, calificar } from "./assets/evaluacion-datos.js";
-import { modoDemo, observarSesion, entrarPonente, salirPonente, observar, borrarTodo } from "./assets/datastore.js";
+import { modoDemo, observarSesion, entrarPonente, salirPonente, observar, borrarTodo, leer, guardar } from "./assets/datastore.js";
+import { calcularCalificaciones } from "./assets/calificaciones.js";
 
 const $ = (id) => document.getElementById(id);
 const COLORES = ["var(--op1)", "var(--op2)", "var(--op3)", "var(--op4)"];
 let evals = [], opins = [];
+let publicado = false, filasCal = [];
 let diag = [], ejer = [], qi = 0, revelar = false, iniciado = false;
 const hora = (t) => t ? new Date(t).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }) : "";
 
@@ -140,16 +158,18 @@ document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => {
   $("tab-diag").classList.toggle("oculto", b.dataset.tab !== "diag");
   $("tab-ejer").classList.toggle("oculto", b.dataset.tab !== "ejer");
   $("tab-eval").classList.toggle("oculto", b.dataset.tab !== "eval");
+  $("tab-cal").classList.toggle("oculto", b.dataset.tab !== "cal");
 });
 
 function iniciar() {
   if (iniciado) return; iniciado = true;
   const err = (e) => { console.error(e); alert("No se pudieron leer los datos. Revisa las reglas de Firestore y que tu correo coincida."); };
-  observar("diagnostico", (l) => { diag = l; pintarDiag(); }, err);
-  observar("ejercicios", (l) => { ejer = l; pintarEjer(); }, err);
-  observar("evaluacion", (l) => { evals = l; pintarEval(); }, err);
+  observar("diagnostico", (l) => { diag = l; pintarDiag(); pintarCal(); }, err);
+  observar("ejercicios", (l) => { ejer = l; pintarEjer(); pintarCal(); }, err);
+  observar("evaluacion", (l) => { evals = l; pintarEval(); pintarCal(); }, err);
   observar("opinion", (l) => { opins = l; pintarEval(); }, err);
   $("f-ej").innerHTML = EJERCICIOS.map((e, n) => `<option value="${e.id}">${n + 1}. ${esc(e.titulo)} (${esc(e.dia)})</option>`).join("");
+  leer("publico", "calificaciones").then((d) => { publicado = !!(d && d.visible); pintarCal(); }).catch(() => {});
   $("f-ej").onchange = pintarEjer; $("f-eq").onchange = pintarEjer;
 }
 
@@ -263,6 +283,30 @@ $("v-csv") && ($("v-csv").onclick = () => {
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv" })); a.download = "evaluacion-y-encuesta.csv"; a.click();
 });
 $("v-borrar") && ($("v-borrar").onclick = async () => { if (confirm("¿Borrar todas las evaluaciones y respuestas de la encuesta? No se puede deshacer.")) { await borrarTodo("evaluacion"); await borrarTodo("opinion"); } });
+// ---------- Calificaciones ----------
+function pintarCal() {
+  filasCal = calcularCalificaciones({ diag, ejer, evals });
+  $("c-n").textContent = filasCal.length;
+  $("c-prom").textContent = filasCal.length ? Math.round(filasCal.reduce((s, f) => s + f.final, 0) / filasCal.length) : "–";
+  $("c-pub").textContent = publicado ? "Sí" : "No";
+  $("c-tabla").innerHTML = filasCal.length ? `<table class="tabla-cal"><thead><tr><th>Alumno</th><th>Equipo</th><th>Diagnóstico (antes)</th><th>Ejercicios</th><th>Participación</th><th>Evaluación (después)</th><th>Final</th></tr></thead><tbody>` +
+    filasCal.map((f) => `<tr><td><b>${esc(f.nombre)}</b></td><td>${esc(f.equipo)}</td><td>${f.diagnostico ? `${f.diagAciertos ?? "✓"}/${f.diagTotal ?? 8}` : "–"}</td><td>${f.ejercicios}/${f.totalEjercicios}</td><td>${f.participacion}</td><td>${f.evaluacion === null ? '<span class="ayuda">Pendiente</span>' : `${f.evalPuntos}/${f.evalTotal} <span class="ayuda">(${f.evaluacion} %)</span>`}</td><td><b>${f.final}</b></td></tr>`).join("") + `</tbody></table>`
+    : `<p class="vacio">Todavía no hay datos.</p>`;
+}
+$("c-publicar").onclick = async () => {
+  if (!confirm("Todo el grupo podrá ver esta lista en la página Calificaciones del sitio. ¿Publicar?")) return;
+  try { await guardar("publico", "calificaciones", { visible: true, lista: filasCal }); publicado = true; pintarCal(); $("c-estado").textContent = "Publicadas. Comparte el enlace: ia-talento-humano.vercel.app/calificaciones.html"; $("c-estado").className = "estado ok"; }
+  catch (e) { console.error(e); $("c-estado").textContent = "No se pudo publicar. Revisa que agregaste la regla de “publico” en Firestore."; $("c-estado").className = "estado err"; }
+};
+$("c-quitar").onclick = async () => {
+  try { await guardar("publico", "calificaciones", { visible: false, lista: [] }); publicado = false; pintarCal(); $("c-estado").textContent = "Se quitó la publicación. Los datos de los alumnos siguen intactos."; $("c-estado").className = "estado ok"; }
+  catch (e) { console.error(e); $("c-estado").textContent = "No se pudo quitar la publicación."; $("c-estado").className = "estado err"; }
+};
+$("c-csv").onclick = () => {
+  const filas = [["nombre", "equipo", "diagnostico_aciertos", "ejercicios", "participacion", "evaluacion", "final"], ...filasCal.map((f) => [f.nombre, f.equipo, f.diagnostico ? `${f.diagAciertos}/${f.diagTotal}` : "no", `${f.ejercicios}/${f.totalEjercicios}`, f.participacion, f.evaluacion ?? "", f.final])];
+  const csv = filas.map((f) => f.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv" })); a.download = "calificaciones.csv"; a.click();
+};
 </script>
 </body>
 </html>

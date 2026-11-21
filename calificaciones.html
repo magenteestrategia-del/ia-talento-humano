@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calificaciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="encabezado"><div class="contenedor">
+  <a class="marca" href="index.html"><span class="punto"></span>IA y talento humano</a>
+  <nav class="nav">
+    <a href="index.html">Inicio</a>
+    <a href="diagnostico.html">Diagnóstico</a>
+    <a href="teoria.html">Guía de estudio</a>
+    <a href="herramientas.html">Herramientas</a>
+    <a href="materiales.html">Materiales</a>
+    <a href="ejercicios.html">Ejercicios</a>
+    <a href="evaluacion.html">Evaluación</a>
+    <a href="calificaciones.html" aria-current="page">Calificaciones</a>
+    <a href="ficha.html">Programa</a>
+  </nav>
+</div></header>
+
+<section class="banda"><div class="contenedor">
+  <div class="eti">Paso 07 · Resultados</div>
+  <h1>Tus <span class="serif">calificaciones</span></h1>
+  <p>Tu participación en el curso y el resultado de tu evaluación final. Busca tu nombre en la lista.</p>
+</div></section>
+
+<main class="contenedor seccion">
+  <div class="caja-ayuda"><b>Cómo se calcula.</b> <b>Diagnóstico (antes)</b>: aciertos en las 8 preguntas con respuesta correcta del diagnóstico inicial; es solo para comparar tu avance y no cuenta en la calificación. <b>Participación</b> (0 a 100): 10 puntos por contestar el diagnóstico y 90 repartidos entre las preguntas de los ejercicios; los ejercicios en equipo cuentan para todo tu equipo. <b>Evaluación</b>: tu porcentaje de aciertos en la evaluación final. <b>Final</b>: 50 % participación y 50 % evaluación. Si no encuentras tu nombre o ves algo raro (por ejemplo, porque contestaste con otro nombre), escríbele a tu ponente.</div>
+  <div class="tarjeta" style="margin-top:16px">
+    <input id="buscar" class="cal-buscar" type="search" placeholder="Escribe tu nombre para encontrarte…" aria-label="Buscar mi nombre">
+    <p id="estado" class="estado" style="margin-top:10px">Cargando…</p>
+    <div id="tabla" style="overflow-x:auto;margin-top:8px"></div>
+  </div>
+</main>
+
+<script type="module">
+import { esc } from "./assets/comun.js";
+import { leer } from "./assets/datastore.js";
+const $ = (id) => document.getElementById(id);
+const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+let lista = [];
+function pintar() {
+  const q = norm($("buscar").value.trim());
+  const filas = q ? lista.filter((f) => norm(f.nombre).includes(q)) : lista;
+  $("tabla").innerHTML = filas.length ? `<table class="tabla-cal"><thead><tr><th>Alumno</th><th>Equipo</th><th>Diagnóstico (antes)</th><th>Ejercicios</th><th>Participación</th><th>Evaluación (después)</th><th>Final</th></tr></thead><tbody>` +
+    filas.map((f) => `<tr class="${q ? "yo" : ""}"><td><b>${esc(f.nombre)}</b></td><td>${esc(f.equipo || "")}</td><td>${f.diagnostico ? `${f.diagAciertos ?? "✓"}/${f.diagTotal ?? 8}` : "–"}</td><td>${f.ejercicios}/${f.totalEjercicios}</td><td>${f.participacion}</td><td>${f.evaluacion === null || f.evaluacion === undefined ? '<span class="ayuda">Pendiente</span>' : `${f.evalPuntos}/${f.evalTotal} <span class="ayuda">(${f.evaluacion} %)</span>`}</td><td><b>${f.final}</b></td></tr>`).join("") + `</tbody></table>`
+    : `<p class="vacio">${q ? "No encontramos ese nombre. Prueba solo con tu primer nombre." : "Sin datos."}</p>`;
+}
+$("buscar").addEventListener("input", pintar);
+try {
+  const d = await leer("publico", "calificaciones");
+  if (!d || !d.visible || !Array.isArray(d.lista) || !d.lista.length) { $("estado").textContent = "Las calificaciones todavía no están publicadas. Vuelve más tarde."; }
+  else { lista = d.lista; $("estado").textContent = `${lista.length} alumnos.`; pintar(); }
+} catch (e) { console.error(e); $("estado").textContent = "No pudimos cargar las calificaciones. Recarga la página en un momento."; $("estado").className = "estado err"; }
+</script>
+<script type="module" src="assets/comun.js"></script>
+<script type="module" src="assets/asistente.js"></script>
+</body>
+</html>

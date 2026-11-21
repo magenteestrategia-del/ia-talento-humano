@@ -396,3 +396,9 @@ h1, h2 { letter-spacing: -.025em; }
 .likert label:has(input:checked) { border-color: #E6007E; background: #FDF0F7; }
 .anonimo { display: flex; gap: 8px; align-items: center; margin: 6px 0 12px; font-size: 14px; }
 @media (max-width: 640px) { .rel-fila { grid-template-columns: 1fr; } .likert small { display: none; } }
+/* Calificaciones */
+.tabla-cal { width: 100%; border-collapse: collapse; font-size: 15px; background: #fff; }
+.tabla-cal th, .tabla-cal td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--linea); white-space: nowrap; }
+.tabla-cal th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); background: #FAFAF8; }
+.tabla-cal tr.yo td { background: #FDE8F3; }
+.cal-buscar { width: 100%; max-width: 420px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 10px; font: inherit; font-size: 16px; }
