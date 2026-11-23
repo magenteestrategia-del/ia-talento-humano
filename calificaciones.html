@@ -62,6 +62,7 @@ const marca = (ok) => ok ? "✅" : "❌";
 const CLAVES = { e2: "Los 7 errores eran: 1) “Liderazgo: ser buena persona y caerle bien a todos” no es observable; 2) la pregunta de la edad discrimina; 3) la de hijos o embarazo discrimina; 4) la pregunta 4 es hipotética (“¿qué harías?”), no conductual; 5) la de religión discrimina; 6) el “artículo 245-B” es un dato legal inventado por la IA; 7) la escala califica rapidez y seguridad, no conductas. Las preguntas 1 y 5 sí eran correctas (STAR)." };
 function verDetalle(f) {
   const d = f.detalle || {}; const dr = d.diag || {}, er = d.eval || {}, ej = d.ej || {};
+  if (!f.detalle && !f.detalleJSON) { $("detalle").innerHTML = `<div class="caja-ayuda">Las respuestas todavía no están publicadas. Pídele a tu ponente que vuelva a dar “Publicar para el grupo”.</div>`; return; }
   let h = `<div class="tarjeta" style="border-top:5px solid #E6007E"><h2 style="margin-top:0">Respuestas de ${esc(f.nombre)}</h2><p class="ayuda">Diagnóstico (antes): ${f.diagnostico ? f.diagAciertos + "/" + f.diagTotal : "no lo contestó"} · Evaluación (después): ${f.evaluacion === null || f.evaluacion === undefined ? "pendiente" : f.evalPuntos + "/" + f.evalTotal} · Participación: ${f.participacion} · Final: <b>${f.final}</b></p></div>`;
   // Diagnóstico
   h += `<h3 style="margin-top:24px">1. Diagnóstico inicial (viernes)</h3>`;
@@ -108,7 +109,12 @@ $("buscar").addEventListener("input", pintar);
 try {
   const d = await leer("publico", "calificaciones");
   if (!d || !d.visible || !Array.isArray(d.lista) || !d.lista.length) { $("estado").textContent = "Las calificaciones todavía no están publicadas. Vuelve más tarde."; }
-  else { lista = d.lista; $("estado").textContent = `${lista.length} alumnos.`; pintar(); pintarCurso(d.curso); }
+  else {
+    lista = d.lista.map((f) => { if (!f.detalle && f.detalleJSON) { try { f.detalle = JSON.parse(f.detalleJSON); } catch (e) { f.detalle = {}; } } return f; });
+    $("estado").textContent = `${lista.length} alumnos.`; pintar();
+    let curso = d.curso; if (typeof curso === "string") { try { curso = JSON.parse(curso); } catch (e) { curso = null; } }
+    pintarCurso(curso);
+  }
 } catch (e) { console.error(e); $("estado").textContent = "No pudimos cargar las calificaciones. Recarga la página en un momento."; $("estado").className = "estado err"; }
 </script>
 <script type="module" src="assets/comun.js"></script>

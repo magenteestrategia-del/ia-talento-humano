@@ -127,7 +127,7 @@ import { esc } from "./assets/comun.js";
 import { DIAGNOSTICO, EJERCICIOS } from "./assets/datos.js";
 import { EVALUACION, ENCUESTA, calificar } from "./assets/evaluacion-datos.js";
 import { modoDemo, observarSesion, entrarPonente, salirPonente, observar, borrarTodo, leer, guardar } from "./assets/datastore.js";
-import { calcularCalificaciones } from "./assets/calificaciones.js?v=4";
+import { calcularCalificaciones } from "./assets/calificaciones.js?v=5";
 
 const $ = (id) => document.getElementById(id);
 const COLORES = ["var(--op1)", "var(--op2)", "var(--op3)", "var(--op4)"];
@@ -295,8 +295,8 @@ function pintarCal() {
 }
 $("c-publicar").onclick = async () => {
   if (!confirm("Todo el grupo podrá ver esta lista en la página Calificaciones del sitio. ¿Publicar?")) return;
-  try { await guardar("publico", "calificaciones", { visible: true, lista: filasCal, curso: resumenCurso() }); publicado = true; pintarCal(); $("c-estado").textContent = "Publicadas. Comparte el enlace: ia-talento-humano.vercel.app/calificaciones.html"; $("c-estado").className = "estado ok"; }
-  catch (e) { console.error(e); $("c-estado").textContent = "No se pudo publicar. Revisa que agregaste la regla de “publico” en Firestore."; $("c-estado").className = "estado err"; }
+  try { const lista = filasCal.map(({ detalle, ...f }) => ({ ...f, detalleJSON: JSON.stringify(detalle || {}) })); await guardar("publico", "calificaciones", { visible: true, lista, curso: JSON.stringify(resumenCurso()) }); publicado = true; pintarCal(); $("c-estado").textContent = "Publicadas. Comparte el enlace: ia-talento-humano.vercel.app/calificaciones.html"; $("c-estado").className = "estado ok"; }
+  catch (e) { console.error(e); $("c-estado").textContent = "No se pudo publicar (" + (e.code || e.message || e) + "). Mándale captura de este mensaje a Claude."; $("c-estado").className = "estado err"; }
 };
 function resumenCurso() {
   const ops = opins.filter((o) => o.respuestas && o.respuestas.s1);
